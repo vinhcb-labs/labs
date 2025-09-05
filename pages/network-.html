@@ -166,34 +166,11 @@ function updateProxyBadge(u){
   if (!badge) return;
   badge.textContent = u ? 'Worker' : 'Direct';
 }
-
 async function sslAnalyze(host, mode='cache'){
-  // Prefer saved value; else take current input; else fallback to placeholder
-  const field = document.getElementById('sslProxyUrl');
-  let raw = (localStorage.getItem('sslProxyUrl') || '').trim();
-  if (!raw && field){
-    raw = (field.value || field.placeholder || '').trim();
-    // if looks like a URL, persist so next time it works without pressing "Lưu"
-    try { if (raw) { new URL(raw); localStorage.setItem('sslProxyUrl', raw); } } catch {}
-  }
+  const raw = (localStorage.getItem('sslProxyUrl') || '').trim();
   const worker = normWorkerUrl(raw);
   updateProxyBadge(worker);
   const params = new URLSearchParams({ host, mode });
-  if (worker){
-    const url = worker + '/?' + params.toString();
-    const r = await fetch(url, { cache:'no-store', mode:'cors' });
-    if (!r.ok) throw new Error('worker HTTP ' + r.status);
-    return await r.json();
-  } else {
-    // direct (likely CORS-blocked, but we try)
-    const base = 'https://api.ssllabs.com/api/v3/analyze?publish=off&all=done&ignoreMismatch=on';
-    const url = base + '&' + new URLSearchParams({ host, [mode==='fresh'?'startNew':'fromCache']:'on' }).toString();
-    const r = await fetch(url, { cache:'no-store', mode:'cors' });
-    if (!r.ok) throw new Error('SSLLabs HTTP ' + r.status);
-    return await r.json();
-  }
-}
-);
   if (worker){
     const url = worker + '/?' + params.toString();
     const r = await fetch(url, { cache:'no-store', mode:'cors' });
@@ -253,13 +230,11 @@ document.getElementById('sslStart')?.addEventListener('click', async () => {
 });
 
 // UI for saving Worker URL
-
 (function initProxyUI(){
   const inp = document.getElementById('sslProxyUrl');
   const btn = document.getElementById('saveSslProxy');
   if (!inp || !btn) return;
-  let cur = localStorage.getItem('sslProxyUrl') || '';
-  if (!cur && inp.placeholder){ cur = inp.placeholder.trim(); }
+  const cur = localStorage.getItem('sslProxyUrl') || '';
   inp.value = cur;
   updateProxyBadge(normWorkerUrl(cur));
   btn.addEventListener('click', ()=>{
@@ -272,7 +247,6 @@ document.getElementById('sslStart')?.addEventListener('click', async () => {
     updateProxyBadge(normWorkerUrl(localStorage.getItem('sslProxyUrl') || ''));
   });
 })();
-
 
 // === Port Scan (HTTP/HTTPS) — DIRECT no-cors (no proxy) ===
 function parsePorts(input){
