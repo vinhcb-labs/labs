@@ -1,305 +1,34 @@
 <link rel="stylesheet" href="../assets/style.css">
-<style>
-/* Fallback styles to ensure consistent UI even if the main CSS fails. */
-.tool input, .tool textarea, .tool select {
-  width: 100%; padding: 10px 12px; border-radius: 10px;
-  border: 1px solid var(--surface); background: var(--surface);
-  color: var(--text); outline: none;
-}
-.tool input::placeholder, .tool textarea::placeholder { color: var(--subtle); }
-.btn { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px;
-  border-radius: 10px; border: 0; cursor: pointer; background: var(--primary);
-  color: #fff; text-decoration: none; white-space: nowrap; }
-.btn.ghost { background: transparent; color: var(--text); border: 1px dashed var(--subtle); }
-.row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-.row.tight { gap: 8px; align-items: flex-end; }
-.tool { background: var(--muted); padding: 12px; border-radius: 12px; border: 1px solid var(--surface); }
-.field { flex: 1 1 220px; min-width: 200px; }
-details.mini > summary { cursor: pointer; color: var(--subtle); margin-top: 8px; }
-label { display:block; margin-bottom:6px; }
-.badge { display:inline-block; font-size:12px; padding:2px 8px; border-radius:999px; background:var(--surface); color:var(--subtle); }
-.code { white-space: pre-wrap; }
-</style>
-
 <div style="padding:18px">
-  <h3 style="margin:0 0 12px 0">Network Tools</h3>
-
-  <div class="grid">
-    <!-- IP PUBLIC (one-line) -->
-    <div class="tool" id="publicIpCard">
-      <h4 style="margin:0">IP PUBLIC: <code id="publicIpCompact">Đang lấy…</code></h4>
-    </div>
-
-    <!-- Check SSL (expiry focus) -->
-    <div class="tool" id="sslCheckCard">
-      <h4>Check SSL <span class="badge" id="sslProxyBadge">Direct</span></h4>
-      <div class="row tight">
-        <div class="field">
-          <label>Domain</label>
-          <input id="sslHost" placeholder="vd: example.com"/>
-        </div>
-        <button class="btn" id="sslStart">Kiểm tra</button>
-      </div>
-      <details class="mini" id="sslAdv">
-        <summary>Tùy chọn</summary>
-        <div class="row" style="margin-top:8px">
-          <div style="flex:1; min-width:180px">
-            <label>Chế độ</label>
-            <select id="sslMode">
-              <option value="cache">Dùng cache nếu có</option>
-              <option value="fresh">Phân tích mới</option>
-            </select>
-          </div>
-          <a class="btn ghost" id="sslOpen" target="_blank" rel="noopener">Mở SSLLabs</a>
-        </div>
-        <div class="row" style="margin-top:8px">
-          <div class="field">
-            <label>Proxy (Cloudflare Worker)</label>
-            <input id="sslProxyUrl" placeholder="https://ssllabs-proxy-vinhcb.vinhcb-path.workers.dev/"/>
-          </div>
-          <button class="btn ghost" id="saveSslProxy">Lưu</button>
-        </div>
-      </details>
-      <pre class="code" id="sslOut" style="margin-top:8px; max-height:320px"></pre>
-    </div>
-
-    <!-- Scan Port (compact) -->
-    <div class="tool" id="portScanCard">
-      <h4>Scan Port (HTTP/HTTPS)</h4>
-      <div class="row tight">
-        <div class="field">
-          <label>Host / IP</label>
-          <input id="psHost" placeholder="vd: example.com hoặc 1.2.3.4"/>
-        </div>
-        <div class="field">
-          <label>Cổng</label>
-          <input id="psPorts" placeholder="vd: 80,443,8080 hoặc 1-1024"/>
-        </div>
-        <button class="btn" id="psStart">Quét</button>
-      </div>
-      <details class="mini" id="psAdv">
-        <summary>Tùy chọn</summary>
-        <div class="row" style="margin-top:8px">
-          <div style="flex:1; min-width:160px">
-            <label>Giao thức</label>
-            <select id="psScheme">
-              <option value="both">HTTP + HTTPS</option>
-              <option value="http">HTTP</option>
-              <option value="https">HTTPS</option>
-            </select>
-          </div>
-          <div style="flex:1; min-width:160px">
-            <label>Timeout (ms)</label>
-            <input id="psTimeout" type="number" value="3000" min="500" max="15000"/>
-          </div>
-        </div>
-      </details>
-      <pre class="code" id="psOut" style="margin-top:8px; max-height:280px"></pre>
-      <div class="mini">Chỉ kiểm tra được dịch vụ HTTP/HTTPS từ trình duyệt. Kết quả phản ánh từ Internet.</div>
+  <h3 style="margin:0 0 12px 0">Network</h3>
+  <div class="tool">
+    <h4 style="margin:0">IP PUBLIC: <code id="publicIp">Đang lấy…</code></h4>
+    <div class="mini" style="margin-top:6px">
+      Địa chỉ IP mà Internet nhìn thấy từ mạng của bạn (WAN egress).
     </div>
   </div>
 </div>
-
 <script>
-// ===== Helpers =====
 const ipv4re = /^(?:\d{1,3}\.){3}\d{1,3}$/;
 const ipv6re = /^[0-9a-f:]+$/i;
-async function fetchJSON(url, timeout=8000){
-  const ctrl = new AbortController(); const t = setTimeout(()=>ctrl.abort('timeout'), timeout);
-  try { const r = await fetch(url, { cache:'no-store', signal: ctrl.signal }); clearTimeout(t); return await r.json(); }
-  catch(e){ clearTimeout(t); throw e; }
-}
-async function fetchTEXT(url, timeout=8000){
-  const ctrl = new AbortController(); const t = setTimeout(()=>ctrl.abort('timeout'), timeout);
-  try { const r = await fetch(url, { cache:'no-store', signal: ctrl.signal }); clearTimeout(t); return await r.text(); }
-  catch(e){ clearTimeout(t); throw e; }
-}
-async function tryAll(tasks){
-  for (const t of tasks){
-    try { const v = await t(); if (v) return v; } catch {}
-  }
-  return '';
-}
-
-// ===== IP PUBLIC (v4 priority, else v6) =====
-async function getIPv4(){
-  return await tryAll([
-    async()=>{ const j = await fetchJSON('https://api.ipify.org?format=json'); return ipv4re.test(j.ip)? j.ip : ''; },
-    async()=>{ const j = await fetchJSON('https://api4.ipify.org?format=json'); return ipv4re.test(j.ip)? j.ip : ''; },
-    async()=>{ const v = (await fetchTEXT('https://ifconfig.me/ip')).trim(); return ipv4re.test(v)? v : ''; }
-  ]);
-}
-async function getIPv6(){
-  return await tryAll([
-    async()=>{ const j = await fetchJSON('https://api64.ipify.org?format=json'); return ipv6re.test(j.ip)? j.ip : ''; },
-    async()=>{ const v = (await fetchTEXT('https://ipv6.icanhazip.com/')).trim(); return ipv6re.test(v)? v : ''; }
-  ]);
-}
-async function initPublicIp(){
-  const el = document.getElementById('publicIpCompact');
-  if (el) el.textContent = 'Đang lấy…';
-  try {
+async function fetchJSON(u){ const r = await fetch(u, { cache: 'no-store' }); return await r.json(); }
+async function fetchTEXT(u){ const r = await fetch(u, { cache: 'no-store' }); return await r.text(); }
+async function tryAll(tasks){ for (const t of tasks){ try{ const v = await t(); if (v) return v; }catch{} } return ''; }
+async function getIPv4(){ return await tryAll([
+  async()=>{ const j = await fetchJSON('https://api.ipify.org?format=json'); return ipv4re.test(j.ip)? j.ip : ''; },
+  async()=>{ const j = await fetchJSON('https://api4.ipify.org?format=json'); return ipv4re.test(j.ip)? j.ip : ''; },
+  async()=>{ const v = (await fetchTEXT('https://ifconfig.me/ip')).trim(); return ipv4re.test(v)? v : ''; },
+]);}
+async function getIPv6(){ return await tryAll([
+  async()=>{ const j = await fetchJSON('https://api64.ipify.org?format=json'); return ipv6re.test(j.ip)? j.ip : ''; },
+  async()=>{ const v = (await fetchTEXT('https://ipv6.icanhazip.com/')).trim(); return ipv6re.test(v)? v : ''; },
+]);}
+(async function init(){
+  const el = document.getElementById('publicIp');
+  el.textContent = 'Đang lấy…';
+  try{
     const [v4, v6] = await Promise.all([getIPv4(), getIPv6()]);
-    const display = v4 || v6 || '—';
-    if (el) el.textContent = display;
-  } catch { if (el) el.textContent = '⚠️ Lỗi lấy IP'; }
-}
-initPublicIp();
-
-// ===== SSL Check (via Cloudflare Worker or Direct) =====
-function normWorkerUrl(u){
-  if (!u) return ''; try{ const x = new URL(u); if (!/^https:$/i.test(x.protocol)) return ''; return x.toString().replace(/\/$/, ''); }catch{ return ''; }
-}
-function updateProxyBadge(u){
-  const badge = document.getElementById('sslProxyBadge'); if (!badge) return; badge.textContent = u ? 'Worker' : 'Direct';
-}
-function saveProxy(val){ if (val) localStorage.setItem('sslProxyUrl', val); else localStorage.removeItem('sslProxyUrl'); }
-function currentWorker(){
-  const field = document.getElementById('sslProxyUrl');
-  let raw = (localStorage.getItem('sslProxyUrl') || '').trim();
-  if (!raw && field){ raw = (field.value || field.placeholder || '').trim(); try{ if (raw) { new URL(raw); saveProxy(raw); } }catch{} }
-  return normWorkerUrl(raw);
-}
-async function sslAnalyze(host, mode='cache'){
-  const worker = currentWorker();
-  updateProxyBadge(worker);
-  const params = new URLSearchParams({ host, mode });
-  if (worker){
-    const url = worker + '/?' + params.toString();
-    const r = await fetch(url, { cache:'no-store', mode:'cors' });
-    const txt = await r.text();
-    if (!r.ok) throw new Error('Worker HTTP ' + r.status + ' • ' + txt.slice(0,200));
-    try { return JSON.parse(txt); } catch(e){ throw new Error('Worker không trả JSON hợp lệ. Body: ' + txt.slice(0,200)); }
-  } else {
-    const base = 'https://api.ssllabs.com/api/v3/analyze?publish=off&all=done&ignoreMismatch=on';
-    const url = base + '&' + new URLSearchParams({ host, fromCache: 'on' }).toString();
-    const r = await fetch(url, { cache:'no-store', mode:'cors' });
-    if (!r.ok) throw new Error('SSLLabs HTTP ' + r.status);
-    return await r.json();
-  }
-}
-function fmtDate(ms){
-  if (!Number.isFinite(ms)) return '—';
-  const d = new Date(ms);
-  const pad = n => String(n).padStart(2,'0');
-  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-}
-function formatSsl(data){
-  if (!data) return 'Không có dữ liệu.';
-  if (data.status && data.status !== 'READY'){ return `Trạng thái: ${data.status} — ${data.statusMessage || ''}`.trim(); }
-  const eps = data.endpoints || []; if (!eps.length) return 'Không có endpoint.';
-  const lines = [];
-  let earliest = { when: Infinity, ip: '' };
-  const left = ms => { const diff = ms - Date.now(); return { diff, days: Math.floor(diff/86400000), hours: Math.floor((diff%86400000)/3600000) }; };
-  for (const ep of eps){
-    const ip = ep.ipAddress || '—';
-    const grade = ep.grade || ep.gradeTrustIgnored || '—';
-    const cert = ep.details && ep.details.cert ? ep.details.cert : null;
-    const notAfter = cert && Number.isFinite(cert.notAfter) ? cert.notAfter : NaN;
-    const issuer = cert && (cert.issuerLabel || cert.issuerSubject || 'Issuer ?');
-    if (Number.isFinite(notAfter) && notAfter < earliest.when) earliest = { when: notAfter, ip };
-    if (!Number.isFinite(notAfter)){ lines.push(`${ip} → Grade: ${grade} • Không đọc được hạn chứng chỉ.`); continue; }
-    const { diff, days, hours } = left(notAfter);
-    if (diff <= 0) lines.push(`${ip} → Grade: ${grade} • ⚠️ ĐÃ HẾT HẠN vào ${fmtDate(notAfter)} (issuer: ${issuer}).`);
-    else lines.push(`${ip} → Grade: ${grade} • Còn ${days} ngày ${hours} giờ • Hết hạn: ${fmtDate(notAfter)} (issuer: ${issuer}).`);
-  }
-  if (Number.isFinite(earliest.when)){
-    const nowLeft = earliest.when - Date.now();
-    const d = Math.floor(nowLeft/86400000), h = Math.floor((nowLeft%86400000)/3600000);
-    const head = nowLeft <= 0
-      ? `Tổng quan: ⚠️ Hết hạn (sớm nhất tại ${earliest.ip} vào ${fmtDate(earliest.when)}).`
-      : `Tổng quan: Còn ${d} ngày ${h} giờ (sớm nhất tại ${earliest.ip} • hết hạn: ${fmtDate(earliest.when)}).`;
-    lines.unshift(head);
-  }
-  return lines.join('\n');
-}
-document.getElementById('sslStart')?.addEventListener('click', async () => {
-  const host = document.getElementById('sslHost').value.trim();
-  const mode = document.getElementById('sslMode')?.value || 'cache';
-  const out = document.getElementById('sslOut');
-  const link = document.getElementById('sslOpen');
-  if (!host){ out.textContent = 'Nhập domain.'; return; }
-  if (link) link.href = `https://www.ssllabs.com/ssltest/analyze.html?d=${encodeURIComponent(host)}`;
-  out.textContent = 'Đang kiểm tra…';
-  try {
-    let tries = 0;
-    let data = await sslAnalyze(host, mode);
-    while (data && data.status && data.status !== 'READY' && tries < 15){
-      out.textContent = `Trạng thái: ${data.status}…`;
-      await new Promise(r => setTimeout(r, 6000));
-      data = await sslAnalyze(host, 'cache');
-      tries++;
-    }
-    out.textContent = formatSsl(data);
-  } catch (e){
-    out.textContent = (e && e.message) ? '⚠️ ' + e.message : '⚠️ Lỗi không xác định khi gọi API.';
-  }
-});
-(function initProxyUI(){
-  const inp = document.getElementById('sslProxyUrl');
-  const btn = document.getElementById('saveSslProxy');
-  if (!inp || !btn) return;
-  let cur = localStorage.getItem('sslProxyUrl') || inp.placeholder || '';
-  inp.value = cur;
-  updateProxyBadge(currentWorker());
-  btn.addEventListener('click', ()=>{
-    const v = inp.value.trim();
-    if (v){ try{ new URL(v); saveProxy(v); }catch{ alert('URL không hợp lệ'); return; } }
-    else saveProxy('');
-    updateProxyBadge(currentWorker());
-  });
+    el.textContent = v4 || v6 || '—';
+  }catch{ el.textContent = '⚠️ Lỗi lấy IP'; }
 })();
-
-// ===== Port Scan (HTTP/HTTPS) — direct no-cors =====
-function parsePorts(input){
-  const parts = input.split(',').map(s => s.trim()).filter(Boolean);
-  const set = new Set();
-  for (const p of parts){
-    if (p.includes('-')){
-      const [a,b] = p.split('-').map(n=>parseInt(n,10));
-      if (Number.isFinite(a) && Number.isFinite(b)){
-        for (let i=Math.min(a,b); i<=Math.max(a,b) && i<=65535; i++) set.add(i);
-      }
-    } else {
-      const n = parseInt(p,10);
-      if (Number.isFinite(n) && n>0 && n<=65535) set.add(n);
-    }
-  }
-  return Array.from(set).sort((x,y)=>x-y);
-}
-async function checkPort(host, port, scheme, timeoutMs){
-  const target = `${scheme}://${host}:${port}/`;
-  const ctrl = new AbortController();
-  const t = setTimeout(()=> ctrl.abort('timeout'), timeoutMs);
-  try {
-    const res = await fetch(target, { signal: ctrl.signal, cache: 'no-store', mode: 'no-cors' });
-    clearTimeout(t);
-    return { port, scheme, status: 'có thể mở (kết nối được)' };
-  } catch (e){
-    clearTimeout(t);
-    return { port, scheme, status: (e && e.name === 'AbortError') ? 'timeout' : 'không kết nối' };
-  }
-}
-document.getElementById('psStart')?.addEventListener('click', async ()=>{
-  const host = document.getElementById('psHost').value.trim();
-  const ports = parsePorts(document.getElementById('psPorts').value.trim());
-  const schemeSel = document.getElementById('psScheme')?.value || 'both';
-  const timeoutMs = parseInt(document.getElementById('psTimeout')?.value || '3000', 10);
-  const out = document.getElementById('psOut');
-  if (!host || ports.length===0){ out.textContent = 'Nhập host và danh sách cổng hợp lệ.'; return; }
-  out.textContent = `Đang quét ${host} trên ${ports.length} cổng...\n`;
-  const schemes = schemeSel==='both' ? ['http','https'] : [schemeSel];
-  const tasks = [];
-  for (const port of ports){ for (const sch of schemes){ tasks.push(checkPort(host, port, sch, timeoutMs)); } }
-  const CONC = 6; const results = []; let idx = 0;
-  async function runNext(){
-    if (idx >= tasks.length) return;
-    const i = idx++; const r = await tasks[i];
-    results.push(r);
-    out.textContent = results.map(x=>`${x.scheme.toUpperCase()} ${x.port}: ${x.status}`).join('\n');
-    await runNext();
-  }
-  await Promise.all(new Array(Math.min(CONC, tasks.length)).fill(0).map(()=>runNext()));
-  out.textContent += `\nHoàn tất.`;
-});
 </script>

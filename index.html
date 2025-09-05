@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Dashboard</title>
+  <title>Labs Dashboard</title>
   <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
@@ -11,36 +11,35 @@
     <header>
       <div class="brand">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true" role="img">
-          <path d="M4 7h16v10H4z" stroke="currentColor" stroke-width="1.6"/>
+          <rect x="3.5" y="6.5" width="17" height="11" rx="2" stroke="currentColor" stroke-width="1.6"/>
           <path d="M2 9h20M2 15h20" stroke="currentColor" stroke-width="1.2" opacity=".6"/>
-          <circle cx="7" cy="12" r="1.2" fill="currentColor"/>
-          <circle cx="12" cy="12" r="1.2" fill="currentColor"/>
-          <circle cx="17" cy="12" r="1.2" fill="currentColor"/>
         </svg>
         <div>
-          <div class="title">Labs</div>
-          <div class="badge"> </div>
+          <div class="title">Labs Dashboard</div>
+          <div class="badge">self-hosted • IIS-ready</div>
         </div>
       </div>
       <div class="toolbar">
-        <button class="theme-toggle" id="themeToggle" aria-label="Đổi giao diện sáng/tối">🌓 Theme</button>
-        <nav class="tabs" role="tablist" aria-label="Labs tabs">
-          <a href="#store" class="tab" role="tab" aria-selected="true" data-tab="store">Store</a>
-          <a href="#network" class="tab" role="tab" aria-selected="false" data-tab="network">Network</a>
-          <a href="#system" class="tab" role="tab" aria-selected="false" data-tab="system">System</a>
-          <a href="#about" class="tab" role="tab" aria-selected="false" data-tab="about">About</a>
+        <nav class="tabs" aria-label="Tabs">
+          <a class="tab" href="#home" data-tab="home" aria-selected="true">Home</a>
+          <a class="tab" href="#store" data-tab="store">Store</a>
+          <a class="tab" href="#network" data-tab="network">Network</a>
+          <a class="tab" href="#system" data-tab="system">System</a>
+          <a class="tab" href="#about" data-tab="about">About</a>
         </nav>
+        <button id="themeToggle" class="theme-toggle" title="Toggle theme">🌗</button>
       </div>
     </header>
 
     <main>
       <section id="panel" class="panel" aria-live="polite">
-        <iframe id="panelFrame" src="pages/store.html" style="width:100%;height:60vh;border:0;display:block;"></iframe>
+        <!-- Content injected here -->
+        <iframe id="panelFrame" src="pages/home.html" style="width:100%;height:60vh;border:0;display:none;"></iframe>
       </section>
     </main>
 
     <footer>
-      <div>© <span id="year"></span> Design By VINHCB </div>
+      <div>© <span id="year"></span> Labs Tools • Built for fast, reliable on-call.</div>
     </footer>
   </div>
   <script>document.getElementById('year').textContent = new Date().getFullYear();</script>

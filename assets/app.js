@@ -1,52 +1,63 @@
-// Theme
-const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-const savedTheme = localStorage.getItem('theme');
-const theme = savedTheme || (prefersDark ? 'dark' : 'light');
-document.documentElement.setAttribute('data-theme', theme);
-document.addEventListener('click', (e)=>{
-  const t = e.target.closest('#themeToggle');
-  if(!t) return;
-  const cur = document.documentElement.getAttribute('data-theme');
-  const next = cur === 'dark' ? 'light' : 'dark';
-  document.documentElement.setAttribute('data-theme', next);
-  localStorage.setItem('theme', next);
-});
 
-// Router (supports HTTP fetch + file:// iframe fallback)
-const routes = { store: 'pages/store.html', network: 'pages/network.html', system: 'pages/system.html', about: 'pages/about.html' };
-const isFileProto = () => location.protocol === 'file:';
-const panel = document.getElementById('panel');
+// Theme toggle
+(function(){
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const saved = localStorage.getItem('theme');
+  const theme = saved || (prefersDark ? 'dark' : 'light');
+  document.documentElement.setAttribute('data-theme', theme);
+  document.getElementById('themeToggle')?.addEventListener('click', ()=>{
+    const cur = document.documentElement.getAttribute('data-theme');
+    const next = cur === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+  });
+})();
+
+// Router (iframe-based so scripts in pages run normally)
+const routes = {
+  home: 'pages/home.html',
+  store: 'pages/store.html',
+  network: 'pages/network.html',
+  system: 'pages/system.html',
+  about: 'pages/about.html',
+};
 
 function ensureIframe(){
-  let frame = document.getElementById('panelFrame');
-  if (!frame) {
-    const wrapper = panel || document.createElement('section');
-    if (!panel) { wrapper.className = 'panel'; wrapper.style.padding = '0'; wrapper.style.overflow = 'hidden'; document.body.appendChild(wrapper); }
-    frame = document.createElement('iframe');
-    frame.id = 'panelFrame'; frame.style.width='100%'; frame.style.height='60vh'; frame.style.border='0'; frame.style.display='block';
-    wrapper.innerHTML = ''; wrapper.appendChild(frame);
+  const panel = document.getElementById('panel');
+  let iframe = document.getElementById('panelFrame');
+  if (!iframe){
+    iframe = document.createElement('iframe');
+    iframe.id = 'panelFrame';
+    iframe.style.cssText = 'width:100%;height:60vh;border:0;display:block;';
+    panel.innerHTML = '';
+    panel.appendChild(iframe);
   }
-  return frame;
+  return iframe;
 }
 
-async function loadPage(name){
-  const tabName = routes[name] ? name : 'store';
-  document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === tabName)));
-  history.replaceState(null, '', `#${tabName}`);
-
-  if (isFileProto()) { ensureIframe().src = routes[tabName]; return; }
-
-  if (!panel) return;
-  try {
-    const res = await fetch(routes[tabName], { cache: 'no-store' });
-    const html = await res.text();
-    panel.innerHTML = html;
-  } catch (e) {
-    ensureIframe().src = routes[tabName];
-  }
+function setActive(tab){
+  document.querySelectorAll('.tab').forEach(a => a.setAttribute('aria-selected', String(a.dataset.tab === tab)));
 }
 
-function currentRoute(){ const h = location.hash.replace('#','').trim(); return routes[h] ? h : 'store'; }
+function loadPage(tab){
+  const iframe = ensureIframe();
+  iframe.src = routes[tab] || routes.home;
+  setActive(tab);
+}
+
+function currentRoute(){
+  const h = location.hash.replace('#','').trim();
+  return routes[h] ? h : 'home';
+}
+
 window.addEventListener('hashchange', ()=> loadPage(currentRoute()));
-document.addEventListener('click', (e)=>{ const t = e.target.closest('.tab'); if(!t) return; e.preventDefault(); loadPage(t.dataset.tab); });
+document.addEventListener('click', (e)=>{
+  const t = e.target.closest('a.tab');
+  if (!t) return;
+  e.preventDefault();
+  const tab = t.dataset.tab;
+  if (!routes[tab]) return;
+  if (location.hash !== '#' + tab) history.replaceState(null, '', `#${tab}`);
+  loadPage(tab);
+});
 window.addEventListener('DOMContentLoaded', ()=> loadPage(currentRoute()));
