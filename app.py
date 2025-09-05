@@ -17,7 +17,7 @@ footer {visibility: hidden;}
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown("### Labs Dashboard · Streamlit")
+st.markdown("### Labs Dashboard")
 
 tabs = st.tabs(["Store", "Network", "System", "About"])
 
