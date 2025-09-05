@@ -19,6 +19,7 @@
 .field { flex: 1 1 220px; min-width: 200px; }
 details.mini > summary { cursor: pointer; color: var(--subtle); margin-top: 8px; }
 label { display:block; margin-bottom:6px; }
+.badge { display:inline-block; font-size:12px; padding:2px 8px; border-radius:999px; background:var(--surface); color:var(--subtle); }
 </style>
 
 <div style="padding:18px">
@@ -32,7 +33,7 @@ label { display:block; margin-bottom:6px; }
 
     <!-- Compact Check SSL -->
     <div class="tool" id="sslCheckCard">
-      <h4>Check SSL</h4>
+      <h4>Check SSL <span class="badge" id="sslProxyBadge">Direct</span></h4>
       <div class="row tight">
         <div class="field">
           <label>Domain</label>
@@ -51,6 +52,13 @@ label { display:block; margin-bottom:6px; }
             </select>
           </div>
           <a class="btn ghost" id="sslOpen" target="_blank" rel="noopener">Mở SSLLabs</a>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <div class="field">
+            <label>Proxy (Cloudflare Worker)</label>
+            <input id="sslProxyUrl" placeholder="https://<your-worker>.workers.dev/"/>
+          </div>
+          <button class="btn ghost" id="saveSslProxy">Lưu</button>
         </div>
       </details>
       <pre class="code" id="sslOut" style="margin-top:8px; max-height:280px"></pre>
@@ -144,16 +152,38 @@ async function initPublicIp(){
 }
 initPublicIp();
 
-// === SSL Check (try direct; if blocked, show guidance) ===
+// === SSL Check via Cloudflare Worker (fallback direct if missing) ===
+function normWorkerUrl(u){
+  if (!u) return '';
+  try{
+    const x = new URL(u);
+    if (!/^https:$/i.test(x.protocol)) return '';
+    return x.toString().replace(/\/$/, ''); // trim trailing /
+  }catch{ return ''; }
+}
+function updateProxyBadge(u){
+  const badge = document.getElementById('sslProxyBadge');
+  if (!badge) return;
+  badge.textContent = u ? 'Worker' : 'Direct';
+}
 async function sslAnalyze(host, mode='cache'){
-  const base = 'https://api.ssllabs.com/api/v3/analyze?publish=off&all=done&ignoreMismatch=on';
-  const params = new URLSearchParams({ host });
-  if (mode === 'fresh') params.set('startNew','on'); else params.set('fromCache','on');
-  const url = base + '&' + params.toString();
-  // try direct (may be CORS-blocked, but we'll catch and fallback)
-  const res = await fetch(url, { cache: 'no-store', mode: 'cors' });
-  if (!res.ok) throw new Error('SSLLabs HTTP ' + res.status);
-  return await res.json(); // may fail if CORS denies JSON
+  const raw = (localStorage.getItem('sslProxyUrl') || '').trim();
+  const worker = normWorkerUrl(raw);
+  updateProxyBadge(worker);
+  const params = new URLSearchParams({ host, mode });
+  if (worker){
+    const url = worker + '/?' + params.toString();
+    const r = await fetch(url, { cache:'no-store', mode:'cors' });
+    if (!r.ok) throw new Error('worker HTTP ' + r.status);
+    return await r.json();
+  } else {
+    // direct (likely CORS-blocked, but we try)
+    const base = 'https://api.ssllabs.com/api/v3/analyze?publish=off&all=done&ignoreMismatch=on';
+    const url = base + '&' + new URLSearchParams({ host, [mode==='fresh'?'startNew':'fromCache']:'on' }).toString();
+    const r = await fetch(url, { cache:'no-store', mode:'cors' });
+    if (!r.ok) throw new Error('SSLLabs HTTP ' + r.status);
+    return await r.json();
+  }
 }
 function formatSsl(data){
   if (!data) return 'Không có dữ liệu.';
@@ -192,9 +222,31 @@ document.getElementById('sslStart')?.addEventListener('click', async () => {
     }
     out.textContent = formatSsl(data);
   } catch (e){
-    out.textContent = '⚠️ Không thể gọi API trong môi trường của bạn (CORS/proxy). Nhấn “Mở SSLLabs” để xem kết quả trực tiếp.';
+    const hasWorker = !!normWorkerUrl(localStorage.getItem('sslProxyUrl') || '');
+    out.textContent = hasWorker
+      ? '⚠️ Worker gặp lỗi. Kiểm tra URL hoặc rate limit.'
+      : '⚠️ Môi trường chặn CORS. Vào Tùy chọn → điền URL Cloudflare Worker, hoặc bấm “Mở SSLLabs”.';
   }
 });
+
+// UI for saving Worker URL
+(function initProxyUI(){
+  const inp = document.getElementById('sslProxyUrl');
+  const btn = document.getElementById('saveSslProxy');
+  if (!inp || !btn) return;
+  const cur = localStorage.getItem('sslProxyUrl') || '';
+  inp.value = cur;
+  updateProxyBadge(normWorkerUrl(cur));
+  btn.addEventListener('click', ()=>{
+    const v = inp.value.trim();
+    if (v){
+      try{ new URL(v); localStorage.setItem('sslProxyUrl', v); }catch{ alert('URL không hợp lệ'); return; }
+    } else {
+      localStorage.removeItem('sslProxyUrl');
+    }
+    updateProxyBadge(normWorkerUrl(localStorage.getItem('sslProxyUrl') || ''));
+  });
+})();
 
 // === Port Scan (HTTP/HTTPS) — DIRECT no-cors (no proxy) ===
 function parsePorts(input){
@@ -220,7 +272,6 @@ async function checkPort(host, port, scheme, timeoutMs){
   try {
     const res = await fetch(target, { signal: ctrl.signal, cache: 'no-store', mode: 'no-cors' });
     clearTimeout(t);
-    // If fetch resolves (even opaque), consider the port reachable at TCP/TLS level.
     return { port, scheme, status: 'có thể mở (kết nối được)' };
   } catch (e){
     clearTimeout(t);
