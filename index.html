@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Labs Dashboard</title>
+  <title>Labs</title>
   <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
@@ -15,8 +15,8 @@
           <path d="M2 9h20M2 15h20" stroke="currentColor" stroke-width="1.2" opacity=".6"/>
         </svg>
         <div>
-          <div class="title">Labs Dashboard</div>
-          <div class="badge">self-hosted • IIS-ready</div>
+          <div class="title">Labs</div>
+          <div class="badge"> </div>
         </div>
       </div>
       <div class="toolbar">
@@ -34,12 +34,12 @@
     <main>
       <section id="panel" class="panel" aria-live="polite">
         <!-- Content injected here -->
-        <iframe id="panelFrame" src="pages/home.html" style="width:100%;height:60vh;border:0;display:none;"></iframe>
+        <iframe id="panelFrame" src="pages/home.html" style="width:100%;height:60vh;border:0;display:block;"></iframe>
       </section>
     </main>
 
     <footer>
-      <div>© <span id="year"></span> Labs Tools • Built for fast, reliable on-call.</div>
+      <div>© <span id="year"></span> Design By VINHCB.</div>
     </footer>
   </div>
   <script>document.getElementById('year').textContent = new Date().getFullYear();</script>

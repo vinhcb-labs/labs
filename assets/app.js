@@ -41,6 +41,7 @@ function setActive(tab){
 
 function loadPage(tab){
   const iframe = ensureIframe();
+  iframe.style.display = 'block';
   iframe.src = routes[tab] || routes.home;
   setActive(tab);
 }
