@@ -1,135 +1,200 @@
-
 <link rel="stylesheet" href="../assets/style.css">
-<div class="split" style="padding:18px">
-  <div>
-    <div class="row" style="justify-content: space-between; margin-bottom: 10px;">
-      <h3 style="margin:0">Quick Commands</h3>
-      <div class="os-toggle" role="radiogroup" aria-label="Chọn hệ điều hành">
-        <input type="radio" name="os" id="os-unix" checked>
-        <label for="os-unix">Linux/macOS</label>
-        <input type="radio" name="os" id="os-win">
-        <label for="os-win">Windows</label>
-      </div>
-    </div>
-    <div class="tool" style="margin-bottom:12px;">
-      <div class="cmd">
-        <code id="cmd-ping">ping -c 4 example.com</code>
-        <button class="btn" data-copy="cmd-ping">Copy</button>
-      </div>
-    </div>
-    <div class="tool" style="margin-bottom:12px;">
-      <div class="cmd">
-        <code id="cmd-trace">traceroute example.com</code>
-        <button class="btn" data-copy="cmd-trace">Copy</button>
-      </div>
-    </div>
-    <div class="tool" style="margin-bottom:12px;">
-      <div class="cmd">
-        <code id="cmd-dns">dig +short A example.com</code>
-        <button class="btn" data-copy="cmd-dns">Copy</button>
-      </div>
-    </div>
-    <div class="tool" style="margin-bottom:12px;">
-      <div class="cmd">
-        <code id="cmd-mtr">mtr -rwzbc 100 example.com</code>
-        <button class="btn" data-copy="cmd-mtr">Copy</button>
-      </div>
-    </div>
-  </div>
+<div style="padding:18px">
+  <h3 style="margin:0 0 12px 0">Network Tools</h3>
 
-  <div>
-    <div class="tool" style="margin-bottom:12px;">
-      <h4>CIDR/Subnet Calculator</h4>
-      <p class="mini">Nhập IP/CIDR, ví dụ: <code>192.168.1.10/24</code> hoặc <code>10.0.0.1/30</code></p>
-      <input id="cidrInput" placeholder="192.168.1.10/24"/>
-      <div class="row" style="justify-content:flex-end; margin-top:8px;">
-        <button class="btn" id="calcBtn">Tính</button>
+  <div class="grid">
+    <div class="tool" id="publicIpCard">
+      <h4>IP công cộng (Public IP)</h4>
+      <div class="row" style="gap:8px">
+        <button class="btn" id="getPublicIp">Lấy IP</button>
+        <code id="publicIpOut" style="flex:1">—</code>
       </div>
-      <pre class="code" id="cidrResult" aria-live="polite"></pre>
+      <div class="mini">Dùng ipify qua CORS proxy để hiển thị IP public.</div>
     </div>
 
-    <div class="tool">
-      <h4>IP ⇄ Integer</h4>
-      <div class="row">
-        <input id="ipInput" placeholder="192.168.1.1" style="flex:1;"/>
-        <button class="btn" id="ipToInt">IP → Int</button>
+    <div class="tool" id="sslCheckCard">
+      <h4>Check SSL (SSL Labs)</h4>
+      <div class="row" style="gap:8px; align-items:flex-end">
+        <div style="flex:2">
+          <label>Domain</label>
+          <input id="sslHost" placeholder="vd: example.com"/>
+        </div>
+        <div style="flex:1">
+          <label>Chế độ</label>
+          <select id="sslMode">
+            <option value="cache">Dùng cache nếu có</option>
+            <option value="fresh">Phân tích mới</option>
+          </select>
+        </div>
+        <button class="btn" id="sslStart">Kiểm tra</button>
+        <a class="btn ghost" id="sslOpen" target="_blank" rel="noopener">Mở SSLLabs</a>
       </div>
-      <div class="row" style="margin-top:8px;">
-        <input id="intInput" placeholder="3232235777" style="flex:1;"/>
-        <button class="btn" id="intToIp">Int → IP</button>
+      <pre class="code" id="sslOut" style="margin-top:8px; max-height:280px"></pre>
+      <div class="mini">Nếu API công khai chậm/giới hạn, mở trực tiếp trang SSLLabs.</div>
+    </div>
+
+    <div class="tool" id="portScanCard">
+      <h4>Scan Port (HTTP/HTTPS)</h4>
+      <div class="row" style="gap:8px; align-items:flex-end; flex-wrap:wrap">
+        <div style="flex:2">
+          <label>Host / IP</label>
+          <input id="psHost" placeholder="vd: example.com hoặc 1.2.3.4"/>
+        </div>
+        <div style="flex:2">
+          <label>Cổng</label>
+          <input id="psPorts" placeholder="vd: 80,443,8080 hoặc 1-1024"/>
+        </div>
+        <div style="flex:1">
+          <label>Giao thức</label>
+          <select id="psScheme">
+            <option value="both">HTTP + HTTPS</option>
+            <option value="http">HTTP</option>
+            <option value="https">HTTPS</option>
+          </select>
+        </div>
+        <div style="flex:1">
+          <label>Timeout (ms)</label>
+          <input id="psTimeout" type="number" value="3000" min="500" max="15000"/>
+        </div>
+        <button class="btn" id="psStart">Quét</button>
       </div>
+      <pre class="code" id="psOut" style="margin-top:8px; max-height:280px"></pre>
+      <div class="mini">Chỉ kiểm tra được dịch vụ HTTP/HTTPS từ trình duyệt (qua proxy). Kết quả phản ánh từ Internet.</div>
     </div>
   </div>
 </div>
+
 <script>
-(function(){
-  const osUnix = document.getElementById('os-unix');
-  const osWin  = document.getElementById('os-win');
-  function setCommands() {
-    const isWin = osWin.checked;
-    document.getElementById('cmd-ping').textContent  = isWin ? 'ping -n 4 example.com' : 'ping -c 4 example.com';
-    document.getElementById('cmd-trace').textContent = isWin ? 'tracert example.com' : 'traceroute example.com';
-    document.getElementById('cmd-dns').textContent   = isWin ? 'nslookup example.com' : 'dig +short A example.com';
-    document.getElementById('cmd-mtr').textContent   = isWin ? 'pathping -q 100 example.com' : 'mtr -rwzbc 100 example.com';
+// === Public IP (ipify qua allorigins) ===
+async function getPublicIp() {
+  const url = 'https://api.allorigins.win/raw?url=' + encodeURIComponent('https://api.ipify.org?format=json');
+  const out = document.getElementById('publicIpOut');
+  out.textContent = 'Đang lấy...';
+  try {
+    const res = await fetch(url, { cache: 'no-store' });
+    const txt = await res.text();
+    let ip = '';
+    try { ip = JSON.parse(txt).ip; } catch { ip = txt.trim(); }
+    out.textContent = ip || '—';
+  } catch (e) {
+    out.textContent = '⚠️ Lỗi hoặc bị chặn CORS/rate-limit';
   }
-  osUnix.addEventListener('change', setCommands);
-  osWin.addEventListener('change', setCommands);
-  setCommands();
+}
+document.getElementById('getPublicIp')?.addEventListener('click', getPublicIp);
 
-  document.querySelectorAll('[data-copy]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id = btn.getAttribute('data-copy');
-      const code = document.getElementById(id).textContent;
-      navigator.clipboard.writeText(code).then(() => {
-        btn.textContent = 'Copied!';
-        setTimeout(() => btn.textContent = 'Copy', 1200);
-      });
-    });
-  });
+// === SSL Check (SSL Labs qua allorigins) ===
+async function sslAnalyze(host, mode='cache'){
+  const base = 'https://api.ssllabs.com/api/v3/analyze?publish=off&all=done&ignoreMismatch=on';
+  const params = new URLSearchParams({ host });
+  if (mode === 'fresh') params.set('startNew','on'); else params.set('fromCache','on');
+  const url = base + '&' + params.toString();
+  const proxied = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+  const res = await fetch(proxied, { cache: 'no-store' });
+  const data = await res.json();
+  return data;
+}
+function formatSsl(data){
+  if (!data) return 'Không có dữ liệu.';
+  if (data.status && data.status !== 'READY'){
+    return `Trạng thái: ${data.status} — ${data.statusMessage || ''}`.trim();
+  }
+  const lines = [];
+  if (data.endpoints && data.endpoints.length){
+    for (const ep of data.endpoints){
+      const grade = ep.grade || ep.gradeTrustIgnored || '—';
+      const ip = ep.ipAddress || '—';
+      lines.push(`${ip} → Grade: ${grade}`);
+    }
+  } else {
+    lines.push('Không có endpoint.');
+  }
+  return lines.join('\\n');
+}
+document.getElementById('sslStart')?.addEventListener('click', async () => {
+  const host = document.getElementById('sslHost').value.trim();
+  const mode = document.getElementById('sslMode').value;
+  const out = document.getElementById('sslOut');
+  const link = document.getElementById('sslOpen');
+  if(!host){ out.textContent = 'Nhập domain.'; return; }
+  link.href = `https://www.ssllabs.com/ssltest/analyze.html?d=${encodeURIComponent(host)}`;
+  out.textContent = 'Đang kiểm tra…';
+  try {
+    let tries = 0;
+    let data = await sslAnalyze(host, mode);
+    while (data && data.status && data.status !== 'READY' && tries < 15){
+      out.textContent = `Trạng thái: ${data.status}…`;
+      await new Promise(r => setTimeout(r, 6000));
+      data = await sslAnalyze(host, 'cache');
+      tries++;
+    }
+    out.textContent = formatSsl(data);
+  } catch (e){
+    out.textContent = '⚠️ Lỗi gọi API hoặc bị chặn CORS.';
+  }
+});
 
-  function ipToInt(ip) {
-    const parts = ip.split('.').map(Number);
-    if (parts.length !== 4 || parts.some(n => Number.isNaN(n) || n < 0 || n > 255)) return null;
-    return ((parts[0]<<24) | (parts[1]<<16) | (parts[2]<<8) | parts[3]) >>> 0;
+// === Port Scan (HTTP/HTTPS via allorigins) ===
+function parsePorts(input){
+  const parts = input.split(',').map(s => s.trim()).filter(Boolean);
+  const set = new Set();
+  for (const p of parts){
+    if (p.includes('-')){
+      const [a,b] = p.split('-').map(n=>parseInt(n,10));
+      if (Number.isFinite(a) && Number.isFinite(b)){
+        for (let i=Math.min(a,b); i<=Math.max(a,b) && i<=65535; i++) set.add(i);
+      }
+    } else {
+      const n = parseInt(p,10);
+      if (Number.isFinite(n) && n>0 && n<=65535) set.add(n);
+    }
   }
-  function intToIp(int) {
-    return [int>>>24 & 255, int>>>16 & 255, int>>>8 & 255, int & 255].join('.');
+  return Array.from(set).sort((x,y)=>x-y);
+}
+async function checkPort(host, port, scheme, timeoutMs){
+  const target = `${scheme}://${host}:${port}/`;
+  const proxied = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(target);
+  const ctrl = new AbortController();
+  const t = setTimeout(()=> ctrl.abort('timeout'), timeoutMs);
+  try {
+    const res = await fetch(proxied, { signal: ctrl.signal, cache: 'no-store' });
+    clearTimeout(t);
+    if (res.ok || res.status === 0){
+      return { port, scheme, status: 'có thể mở (HTTP OK/opaque)' };
+    }
+    return { port, scheme, status: `phản hồi ${res.status}` };
+  } catch (e){
+    clearTimeout(t);
+    return { port, scheme, status: (e && e.name === 'AbortError') ? 'timeout' : 'không kết nối' };
   }
-  function maskFromPrefix(p) {
-    p = Number(p);
-    if (!(p >= 0 && p <= 32)) return null;
-    return p === 0 ? 0 : (0xFFFFFFFF << (32 - p)) >>> 0;
+}
+document.getElementById('psStart')?.addEventListener('click', async ()=>{
+  const host = document.getElementById('psHost').value.trim();
+  const ports = parsePorts(document.getElementById('psPorts').value.trim());
+  const schemeSel = document.getElementById('psScheme').value;
+  const timeoutMs = parseInt(document.getElementById('psTimeout').value, 10) || 3000;
+  const out = document.getElementById('psOut');
+  if (!host || ports.length===0){ out.textContent = 'Nhập host và danh sách cổng hợp lệ.'; return; }
+  out.textContent = `Đang quét ${host} trên ${ports.length} cổng...\\n`;
+  const schemes = schemeSel==='both' ? ['http','https'] : [schemeSel];
+  const tasks = [];
+  for (const port of ports){
+    for (const sch of schemes){
+      tasks.push(checkPort(host, port, sch, timeoutMs));
+    }
   }
-  document.getElementById('calcBtn').addEventListener('click', () => {
-    const input = document.getElementById('cidrInput').value.trim();
-    const out = document.getElementById('cidrResult');
-    const m = input.match(/^([^\/]+)\/(\d{1,2})$/);
-    if (!m) { out.textContent = '⚠️ Định dạng không hợp lệ. Ví dụ: 192.168.1.10/24'; return; }
-    const ip = ipToInt(m[1]);
-    const p = Number(m[2]);
-    const mask = maskFromPrefix(p);
-    if (ip === null || mask === null) { out.textContent = '⚠️ IP hoặc prefix không hợp lệ.'; return; }
-    const network = (ip & mask) >>> 0;
-    const broadcast = (network | (~mask >>> 0)) >>> 0;
-    const usable = p >= 31 ? (p === 31 ? 2 : 1) : Math.max(0, (2 ** (32 - p)) - 2);
-    const firstHost = p >= 31 ? network : (network + 1) >>> 0;
-    const lastHost  = p >= 31 ? broadcast : (broadcast - 1) >>> 0;
-    out.textContent = `IP: ${intToIp(ip)}\nPrefix: /${p}\nMask: ${intToIp(mask)}\nNetwork: ${intToIp(network)}\nBroadcast: ${intToIp(broadcast)}\nUsable hosts: ${usable}\nFirst host: ${intToIp(firstHost)}\nLast host: ${intToIp(lastHost)}`;
-  });
-
-  document.getElementById('ipToInt').addEventListener('click', () => {
-    const ip = document.getElementById('ipInput').value.trim();
-    const parts = ip.split('.').map(Number);
-    if (parts.length !== 4 || parts.some(n => Number.isNaN(n) || n < 0 || n > 255)) { alert('IP không hợp lệ'); return; }
-    const val = ((parts[0]<<24) | (parts[1]<<16) | (parts[2]<<8) | parts[3]) >>> 0;
-    alert(val);
-  });
-  document.getElementById('intToIp').addEventListener('click', () => {
-    const num = Number(document.getElementById('intInput').value.trim());
-    if (!Number.isFinite(num) || num < 0 || num > 0xFFFFFFFF) { alert('Số không hợp lệ (0..4294967295)'); return; }
-    const int = num >>> 0;
-    const ip = [int>>>24 & 255, int>>>16 & 255, int>>>8 & 255, int & 255].join('.');
-    alert(ip);
-  });
-})();
+  // Limit concurrency
+  const CONC = 6;
+  const results = [];
+  let idx = 0;
+  async function runNext(){
+    if (idx >= tasks.length) return;
+    const i = idx++;
+    const r = await tasks[i];
+    results.push(r);
+    out.textContent = results.map(x=>`${x.scheme.toUpperCase()} ${x.port}: ${x.status}`).join('\\n');
+    await runNext();
+  }
+  await Promise.all(new Array(Math.min(CONC, tasks.length)).fill(0).map(()=>runNext()));
+  out.textContent += `\\nHoàn tất.`;
+});
 </script>

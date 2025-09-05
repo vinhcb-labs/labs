@@ -1,97 +1,73 @@
-
 <link rel="stylesheet" href="../assets/style.css">
-<div class="split" style="padding:18px">
-  <div>
-    <div class="tool" style="margin-bottom:12px;">
-      <h4>Base64 Encode/Decode</h4>
-      <textarea id="b64Input" rows="5" placeholder="Nhập văn bản…"></textarea>
-      <div class="row" style="margin-top:8px;">
-        <button class="btn" id="b64Enc">Encode</button>
-        <button class="btn secondary" id="b64Dec">Decode</button>
-      </div>
-      <pre class="code" id="b64Out"></pre>
-    </div>
+<div style="padding:18px">
+  <h3 style="margin:0 0 12px 0">System Tools</h3>
 
-    <div class="tool">
-      <h4>Epoch Time Converter</h4>
-      <div class="row">
-        <input id="epochInput" placeholder="Epoch (sec hoặc ms)" style="flex:1;"/>
-        <button class="btn" id="epochNow">Now</button>
-        <button class="btn secondary" id="epochToHuman">→ Human</button>
+  <div class="tool" id="passwordGen">
+    <h4>Tạo mật khẩu ngẫu nhiên (đủ nhóm ký tự)</h4>
+    <div class="row" style="gap:8px; align-items:flex-end; flex-wrap:wrap">
+      <div style="flex:1">
+        <label>Độ dài</label>
+        <input id="pwLen" type="number" value="16" min="8" max="128"/>
       </div>
-      <div class="row" style="margin-top:8px;">
-        <input id="dateInput" placeholder="YYYY-MM-DD HH:mm:ss" style="flex:1;"/>
-        <button class="btn" id="humanToEpoch">→ Epoch</button>
+      <div style="flex:2; display:grid; grid-template-columns: repeat(4, minmax(90px, 1fr)); gap:8px">
+        <label><input type="checkbox" id="pwLower" checked/> a-z</label>
+        <label><input type="checkbox" id="pwUpper" checked/> A-Z</label>
+        <label><input type="checkbox" id="pwDigit" checked/> 0-9</label>
+        <label><input type="checkbox" id="pwSymbol" checked/> !@#$…</label>
       </div>
-      <pre class="code" id="epochOut"></pre>
+      <button class="btn" id="pwMake">Tạo</button>
+      <button class="btn secondary" id="pwCopy">Copy</button>
     </div>
-  </div>
-
-  <div>
-    <div class="tool">
-      <h4>SHA‑256 Hash</h4>
-      <textarea id="hashInput" rows="5" placeholder="Nhập chuỗi cần băm…"></textarea>
-      <div class="row" style="margin-top:8px;">
-        <button class="btn" id="doHash">Tạo SHA‑256</button>
-        <button class="btn secondary" id="copyHash">Copy</button>
-      </div>
-      <pre class="code" id="hashOut"></pre>
-      <p class="mini">Dùng WebCrypto API (client‑side). Không gửi dữ liệu ra ngoài.</p>
-    </div>
+    <input id="pwOut" readonly placeholder="Mật khẩu sẽ hiện ở đây" style="margin-top:8px"/>
+    <div class="mini">Dùng Web Crypto (CSPRNG). Đảm bảo có ít nhất 1 ký tự từ mỗi nhóm đã chọn.</div>
   </div>
 </div>
+
 <script>
+// === Password Generator ===
 (function(){
-  const b64encode = (str) => { try { return btoa(unescape(encodeURIComponent(str))); } catch { return '⚠️ Không mã hóa được.'; } };
-  const b64decode = (str) => { try { return decodeURIComponent(escape(atob(str))); } catch { return '⚠️ Không giải mã được.'; } };
-  document.getElementById('b64Enc').addEventListener('click', () => {
-    const s = document.getElementById('b64Input').value;
-    document.getElementById('b64Out').textContent = b64encode(s);
-  });
-  document.getElementById('b64Dec').addEventListener('click', () => {
-    const s = document.getElementById('b64Input').value;
-    document.getElementById('b64Out').textContent = b64decode(s);
-  });
-
-  document.getElementById('epochNow').addEventListener('click', () => {
-    document.getElementById('epochInput').value = Date.now();
-  });
-  document.getElementById('epochToHuman').addEventListener('click', () => {
-    let v = document.getElementById('epochInput').value.trim();
-    if (!v) return;
-    let n = Number(v);
-    if (!Number.isFinite(n)) { document.getElementById('epochOut').textContent = '⚠️ Không hợp lệ'; return; }
-    if (String(Math.floor(n)).length <= 10) n = n * 1000;
-    const d = new Date(n);
-    document.getElementById('epochOut').textContent = d.toString() + "\\nISO: " + d.toISOString();
-  });
-  document.getElementById('humanToEpoch').addEventListener('click', () => {
-    const s = document.getElementById('dateInput').value.trim();
-    if (!s) return;
-    const d = new Date(s.replace(' ', 'T'));
-    if (isNaN(d)) { document.getElementById('epochOut').textContent = '⚠️ Không phân tích được ngày/giờ'; return; }
-    document.getElementById('epochOut').textContent = Math.floor(d.getTime()/1000) + ' sec\\n' + d.getTime() + ' ms';
-  });
-
-  async function sha256(message) {
-    const enc = new TextEncoder().encode(message);
-    const buf = await crypto.subtle.digest('SHA-256', enc);
-    const arr = Array.from(new Uint8Array(buf));
-    return arr.map(b => b.toString(16).padStart(2,'0')).join('');
-  }
-  document.getElementById('doHash').addEventListener('click', async () => {
-    const s = document.getElementById('hashInput').value;
-    try {
-      const h = await sha256(s);
-      document.getElementById('hashOut').textContent = h;
-    } catch (e) {
-      document.getElementById('hashOut').textContent = '⚠️ Trình duyệt không hỗ trợ WebCrypto';
+  const rnd = (n) => {
+    const a = new Uint32Array(n);
+    crypto.getRandomValues(a);
+    return a;
+  };
+  const pick = (charset, count=1) => {
+    const out = [];
+    const arr = rnd(count);
+    for (let i=0;i<count;i++){
+      out.push(charset[arr[i] % charset.length]);
     }
-  });
-  document.getElementById('copyHash').addEventListener('click', async () => {
-    const t = document.getElementById('hashOut').textContent.trim();
+    return out;
+  };
+  function gen(){
+    const len = Math.min(128, Math.max(8, parseInt(document.getElementById('pwLen').value,10) || 16));
+    const sets = [];
+    const lower = 'abcdefghijklmnopqrstuvwxyz';
+    const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const digit = '0123456789';
+    const symbol = '!@#$%^&*()_+-=[]{}|;:,.<>?/~';
+    if (document.getElementById('pwLower').checked) sets.push(lower);
+    if (document.getElementById('pwUpper').checked) sets.push(upper);
+    if (document.getElementById('pwDigit').checked) sets.push(digit);
+    if (document.getElementById('pwSymbol').checked) sets.push(symbol);
+    if (sets.length === 0){ alert('Chọn ít nhất 1 nhóm ký tự'); return; }
+
+    const required = sets.map(s => pick(s, 1)[0]);
+    const mega = sets.join('');
+    const remaining = pick(mega, Math.max(len - required.length, 0));
+    const all = required.concat(remaining);
+    const rand = rnd(all.length);
+    for (let i = all.length - 1; i > 0; i--) {
+      const j = rand[i] % (i + 1);
+      [all[i], all[j]] = [all[j], all[i]];
+    }
+    document.getElementById('pwOut').value = all.join('');
+  }
+  document.getElementById('pwMake')?.addEventListener('click', gen);
+  document.getElementById('pwCopy')?.addEventListener('click', async ()=>{
+    const t = document.getElementById('pwOut').value;
     if (!t) return;
-    await navigator.clipboard.writeText(t);
+    try { await navigator.clipboard.writeText(t); } catch {}
   });
 })();
 </script>
