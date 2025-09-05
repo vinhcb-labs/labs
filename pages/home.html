@@ -1,29 +1,8 @@
 <link rel="stylesheet" href="../assets/style.css">
 <div style="padding:10px">
-  <h2 style="margin-top:0">Chào mừng đến Labs Dashboard</h2>
-  <p class="mini">Chọn một tab ở trên để sử dụng công cụ. Bắt đầu nhanh:</p>
+  <h2 style="margin-top:0">Chào mừng bạn đến với địa chỉ này !</h2>
+  <p class="mini">Mời bạn chọn một tab ở trên để sử dụng công cụ. Bắt đầu nhanh:</p>
   <div class="grid" style="margin-top:10px">
-    <div class="tool">
-      <h4>Network → IP PUBLIC</h4>
-      <p class="mini">Xem địa chỉ IP ra Internet của mạng bạn (IPv4 ưu tiên, nếu không có sẽ hiển thị IPv6).</p>
-      <a class="tab" href="#network" data-tab="network" target="_parent" aria-selected="false">Mở Network ⟶</a>
-    </div>
-    <div class="tool">
-      <h4>Store</h4>
-      <p class="mini">Ghi chú/luu trữ nhanh (tùy dự án).</p>
-      <a class="tab" href="#store" data-tab="store" target="_parent" aria-selected="false">Mở Store ⟶</a>
-    </div>
-    <div class="tool">
-      <h4>System</h4>
-      <p class="mini">Thông tin hệ thống/host (tùy dự án).</p>
-      <a class="tab" href="#system" data-tab="system" target="_parent" aria-selected="false">Mở System ⟶</a>
-    </div>
+    
   </div>
-</div>\n
-<script>
-document.addEventListener('click', function(e){
-  const a = e.target.closest('a[data-tab]');
-  if(!a) return;
-  try { parent.postMessage({ tab: a.dataset.tab }, '*'); } catch(_){}
-});
-</script>
+</div>
