@@ -11,14 +11,10 @@
   outline: none;
 }
 .tool input::placeholder, .tool textarea::placeholder { color: var(--subtle); }
-.btn { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 10px; border: 0; cursor: pointer; background: var(--primary); color: #fff; text-decoration: none; white-space: nowrap; }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 10px; border: 0; cursor: pointer; background: var(--primary); color: #fff; text-decoration: none; }
 .btn.ghost { background: transparent; color: var(--text); border: 1px dashed var(--subtle); }
 .row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
-.row.tight { gap: 8px; align-items: flex-end; }
 .tool { background: var(--muted); padding: 12px; border-radius: 12px; border: 1px solid var(--surface); }
-.field { flex: 1 1 220px; min-width: 200px; }
-details.mini > summary { cursor: pointer; color: var(--subtle); margin-top: 8px; }
-label { display:block; margin-bottom:6px; }
 </style>
 
 <div style="padding:18px">
@@ -30,63 +26,52 @@ label { display:block; margin-bottom:6px; }
       <h4 style="margin:0">IP PUBLIC: <code id="publicIpCompact">Đang lấy…</code></h4>
     </div>
 
-    <!-- Compact Check SSL -->
     <div class="tool" id="sslCheckCard">
       <h4>Check SSL</h4>
-      <div class="row tight">
-        <div class="field">
+      <div class="row" style="gap:8px; align-items:flex-end">
+        <div style="flex:2">
           <label>Domain</label>
           <input id="sslHost" placeholder="vd: example.com"/>
         </div>
-        <button class="btn" id="sslStart">Kiểm tra</button>
-      </div>
-      <details class="mini" id="sslAdv">
-        <summary>Tùy chọn</summary>
-        <div class="row" style="margin-top:8px">
-          <div style="flex:1; min-width:180px">
-            <label>Chế độ</label>
-            <select id="sslMode">
-              <option value="cache">Dùng cache nếu có</option>
-              <option value="fresh">Phân tích mới</option>
-            </select>
-          </div>
-          <a class="btn ghost" id="sslOpen" target="_blank" rel="noopener">Mở SSLLabs</a>
+        <div style="flex:1">
+          <label>Chế độ</label>
+          <select id="sslMode">
+            <option value="cache">Dùng cache nếu có</option>
+            <option value="fresh">Phân tích mới</option>
+          </select>
         </div>
-      </details>
+        <button class="btn" id="sslStart">Kiểm tra</button>
+        <a class="btn ghost" id="sslOpen" target="_blank" rel="noopener">Mở SSLLabs</a>
+      </div>
       <pre class="code" id="sslOut" style="margin-top:8px; max-height:280px"></pre>
+      <div class="mini">Nếu API công khai chậm/giới hạn, mở trực tiếp trang SSLLabs.</div>
     </div>
 
-    <!-- Compact Scan Port -->
     <div class="tool" id="portScanCard">
       <h4>Scan Port (HTTP/HTTPS)</h4>
-      <div class="row tight">
-        <div class="field">
+      <div class="row" style="gap:8px; align-items:flex-end; flex-wrap:wrap">
+        <div style="flex:2">
           <label>Host / IP</label>
           <input id="psHost" placeholder="vd: example.com hoặc 1.2.3.4"/>
         </div>
-        <div class="field">
+        <div style="flex:2">
           <label>Cổng</label>
           <input id="psPorts" placeholder="vd: 80,443,8080 hoặc 1-1024"/>
         </div>
+        <div style="flex:1">
+          <label>Giao thức</label>
+          <select id="psScheme">
+            <option value="both">HTTP + HTTPS</option>
+            <option value="http">HTTP</option>
+            <option value="https">HTTPS</option>
+          </select>
+        </div>
+        <div style="flex:1">
+          <label>Timeout (ms)</label>
+          <input id="psTimeout" type="number" value="3000" min="500" max="15000"/>
+        </div>
         <button class="btn" id="psStart">Quét</button>
       </div>
-      <details class="mini" id="psAdv">
-        <summary>Tùy chọn</summary>
-        <div class="row" style="margin-top:8px">
-          <div style="flex:1; min-width:160px">
-            <label>Giao thức</label>
-            <select id="psScheme">
-              <option value="both">HTTP + HTTPS</option>
-              <option value="http">HTTP</option>
-              <option value="https">HTTPS</option>
-            </select>
-          </div>
-          <div style="flex:1; min-width:160px">
-            <label>Timeout (ms)</label>
-            <input id="psTimeout" type="number" value="3000" min="500" max="15000"/>
-          </div>
-        </div>
-      </details>
       <pre class="code" id="psOut" style="margin-top:8px; max-height:280px"></pre>
       <div class="mini">Chỉ kiểm tra được dịch vụ HTTP/HTTPS từ trình duyệt (qua proxy). Kết quả phản ánh từ Internet.</div>
     </div>
@@ -179,12 +164,11 @@ function formatSsl(data){
 }
 document.getElementById('sslStart')?.addEventListener('click', async () => {
   const host = document.getElementById('sslHost').value.trim();
-  const modeEl = document.getElementById('sslMode');
-  const mode = modeEl ? modeEl.value : 'cache';
+  const mode = document.getElementById('sslMode').value;
   const out = document.getElementById('sslOut');
   const link = document.getElementById('sslOpen');
   if(!host){ out.textContent = 'Nhập domain.'; return; }
-  if (link) link.href = `https://www.ssllabs.com/ssltest/analyze.html?d=${encodeURIComponent(host)}`;
+  link.href = `https://www.ssllabs.com/ssltest/analyze.html?d=${encodeURIComponent(host)}`;
   out.textContent = 'Đang kiểm tra…';
   try {
     let tries = 0;
@@ -238,10 +222,8 @@ async function checkPort(host, port, scheme, timeoutMs){
 document.getElementById('psStart')?.addEventListener('click', async ()=>{
   const host = document.getElementById('psHost').value.trim();
   const ports = parsePorts(document.getElementById('psPorts').value.trim());
-  const schemeSelEl = document.getElementById('psScheme');
-  const schemeSel = schemeSelEl ? schemeSelEl.value : 'both';
-  const timeoutEl = document.getElementById('psTimeout');
-  const timeoutMs = timeoutEl ? parseInt(timeoutEl.value, 10) : 3000;
+  const schemeSel = document.getElementById('psScheme').value;
+  const timeoutMs = parseInt(document.getElementById('psTimeout').value, 10) || 3000;
   const out = document.getElementById('psOut');
   if (!host || ports.length===0){ out.textContent = 'Nhập host và danh sách cổng hợp lệ.'; return; }
   out.textContent = `Đang quét ${host} trên ${ports.length} cổng...\n`;

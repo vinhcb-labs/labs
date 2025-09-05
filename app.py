@@ -8,7 +8,7 @@ ROOT = Path(__file__).parent
 ASSETS = ROOT / "assets"
 PAGES = ROOT / "pages"
 
-st.set_page_config(page_title="Labs Dashboard", layout="wide")
+st.set_page_config(page_title="Labs", layout="wide")
 
 st.markdown("""
 <style>
@@ -17,7 +17,7 @@ footer {visibility: hidden;}
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown("### Labs Dashboard")
+st.markdown("### Labs")
 
 tabs = st.tabs(["Store", "Network", "System", "About"])
 
@@ -51,4 +51,4 @@ with tabs[2]:
 with tabs[3]:
     render_subpage("about.html")
 
-st.caption("© Labs Tools • Built for fast, reliable on-call.")
+st.caption("© Design By VINHCB")
