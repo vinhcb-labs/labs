@@ -1,0 +1,68 @@
+
+<link rel="stylesheet" href="../assets/style.css">
+<div style="padding:18px">
+  <div class="row" style="justify-content: space-between; gap: 12px; margin-bottom: 10px;">
+    <input id="storeSearch" class="search" placeholder="Tìm app… (ví dụ: speedtest, anydesk, vietmap)" aria-label="Tìm kiếm ứng dụng" />
+    <span class="chip" title="Hướng dẫn">Chỉnh file pages/store.html để thêm app</span>
+  </div>
+  <div class="grid" id="storeGrid">
+    <article class="card" data-tags="vietmap live tw50 h1as navigation">
+      <h3>Vietmap Live</h3>
+      <p>Ứng dụng trợ lý giao thông / tích hợp TW50, H1AS.</p>
+      <div class="row">
+        <a class="btn" href="https://play.google.com/store/apps/details?id=vn.vietmap.live" target="_blank" rel="noopener">Tải Android</a>
+        <a class="btn secondary" href="https://apps.apple.com/vn/app/vietmap-live/id1626683865" target="_blank" rel="noopener">Tải iOS</a>
+      </div>
+    </article>
+    <article class="card" data-tags="speedtest network đo tốc độ băng thông">
+      <h3>Speedtest by Ookla</h3>
+      <p>Đo tốc độ mạng nhanh, tin cậy.</p>
+      <div class="row">
+        <a class="btn" href="https://www.speedtest.net/apps" target="_blank" rel="noopener">Tải ứng dụng</a>
+        <a class="btn ghost" href="https://www.speedtest.net/" target="_blank" rel="noopener">Mở web</a>
+      </div>
+    </article>
+    <article class="card" data-tags="remote anydesk hỗ trợ từ xa">
+      <h3>AnyDesk</h3>
+      <p>Hỗ trợ điều khiển từ xa cho Labs/Helpdesk.</p>
+      <div class="row">
+        <a class="btn" href="https://anydesk.com/en/downloads" target="_blank" rel="noopener">Tải về</a>
+      </div>
+    </article>
+    <article class="card" data-tags="teamviewer remote hỗ trợ từ xa">
+      <h3>TeamViewer/QuickSupport</h3>
+      <p>Hỗ trợ truy cập máy khách nhanh chóng.</p>
+      <div class="row">
+        <a class="btn" href="https://www.teamviewer.com/en/download/" target="_blank" rel="noopener">Tải TeamViewer</a>
+        <a class="btn ghost" href="https://www.teamviewer.com/en/download/mobile-apps/" target="_blank" rel="noopener">QuickSupport</a>
+      </div>
+    </article>
+    <article class="card" data-tags="terminal android termux ssh">
+      <h3>Termux (Android)</h3>
+      <p>Terminal &amp; SSH trên Android, tiện cho kiểm tra nhanh.</p>
+      <div class="row">
+        <a class="btn" href="https://f-droid.org/en/packages/com.termux/" target="_blank" rel="noopener">Tải từ F‑Droid</a>
+      </div>
+    </article>
+    <article class="card" data-tags="vpn wireguard network bảo mật">
+      <h3>WireGuard</h3>
+      <p>VPN nhẹ, an toàn cho truy cập nội bộ.</p>
+      <div class="row">
+        <a class="btn" href="https://www.wireguard.com/install/" target="_blank" rel="noopener">Tải ứng dụng</a>
+      </div>
+    </article>
+  </div>
+</div>
+<script>
+(function(){
+  const storeSearch = document.getElementById('storeSearch');
+  const storeGrid = document.getElementById('storeGrid');
+  storeSearch.addEventListener('input', () => {
+    const q = storeSearch.value.toLowerCase().trim();
+    storeGrid.querySelectorAll('.card').forEach(card => {
+      const text = (card.innerText + ' ' + (card.dataset.tags||'')).toLowerCase();
+      card.style.display = text.includes(q) ? '' : 'none';
+    });
+  });
+})();
+</script>
