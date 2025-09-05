@@ -62,3 +62,15 @@ document.addEventListener('click', (e)=>{
   loadPage(tab);
 });
 window.addEventListener('DOMContentLoaded', ()=> loadPage(currentRoute()));
+\n
+// Listen for navigation requests from iframes (Home buttons)
+window.addEventListener('message', (ev)=>{
+  try{
+    const data = ev.data || {};
+    const tab = data.tab;
+    if (tab && routes[tab]){
+      if (location.hash !== '#' + tab) history.replaceState(null, '', '#' + tab);
+      loadPage(tab);
+    }
+  }catch{}
+});
