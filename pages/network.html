@@ -88,7 +88,7 @@ label { display:block; margin-bottom:6px; }
         </div>
       </details>
       <pre class="code" id="psOut" style="margin-top:8px; max-height:280px"></pre>
-      <div class="mini">Chỉ kiểm tra được dịch vụ HTTP/HTTPS từ trình duyệt (qua proxy). Kết quả phản ánh từ Internet.</div>
+      <div class="mini">Chỉ kiểm tra được dịch vụ HTTP/HTTPS từ trình duyệt. Kết quả phản ánh từ Internet.</div>
     </div>
   </div>
 </div>
@@ -118,20 +118,15 @@ async function tryAll(tasks){
 async function getIPv4(){
   return await tryAll([
     async()=>{ const j = await fetchJSON('https://api4.ipify.org?format=json'); return ipv4re.test(j.ip)? j.ip : ''; },
-    async()=>{ const j = await fetchJSON('https://api.allorigins.win/raw?url=' + encodeURIComponent('https://api4.ipify.org?format=json')); return ipv4re.test(j.ip)? j.ip : ''; },
     async()=>{ const j = await fetchJSON('https://api.myip.com'); return ipv4re.test(j.ip)? j.ip : ''; },
-    async()=>{ const j = await fetchJSON('https://api.allorigins.win/raw?url=' + encodeURIComponent('https://api.myip.com')); return ipv4re.test(j.ip)? j.ip : ''; },
-    async()=>{ const t = await fetchTEXT('https://ifconfig.me/ip'); const v=t.trim(); return ipv4re.test(v)? v : ''; },
-    async()=>{ const t = await fetchTEXT('https://api.allorigins.win/raw?url=' + encodeURIComponent('https://ifconfig.me/ip')); const v=t.trim(); return ipv4re.test(v)? v : ''; }
+    async()=>{ const t = await fetchTEXT('https://ifconfig.me/ip'); const v=t.trim(); return ipv4re.test(v)? v : ''; }
   ]);
 }
 
 async function getIPv6(){
   return await tryAll([
     async()=>{ const j = await fetchJSON('https://api6.ipify.org?format=json'); return ipv6re.test(j.ip)? j.ip : ''; },
-    async()=>{ const j = await fetchJSON('https://api.allorigins.win/raw?url=' + encodeURIComponent('https://api6.ipify.org?format=json')); return ipv6re.test(j.ip)? j.ip : ''; },
-    async()=>{ const t = await fetchTEXT('https://ipv6.icanhazip.com/'); const v=t.trim(); return ipv6re.test(v)? v : ''; },
-    async()=>{ const t = await fetchTEXT('https://api.allorigins.win/raw?url=' + encodeURIComponent('https://ipv6.icanhazip.com/')); const v=t.trim(); return ipv6re.test(v)? v : ''; }
+    async()=>{ const t = await fetchTEXT('https://ipv6.icanhazip.com/'); const v=t.trim(); return ipv6re.test(v)? v : ''; }
   ]);
 }
 
@@ -149,16 +144,16 @@ async function initPublicIp(){
 }
 initPublicIp();
 
-// === SSL Check (SSL Labs qua allorigins) ===
+// === SSL Check (try direct; if blocked, show guidance) ===
 async function sslAnalyze(host, mode='cache'){
   const base = 'https://api.ssllabs.com/api/v3/analyze?publish=off&all=done&ignoreMismatch=on';
   const params = new URLSearchParams({ host });
   if (mode === 'fresh') params.set('startNew','on'); else params.set('fromCache','on');
   const url = base + '&' + params.toString();
-  const proxied = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
-  const res = await fetch(proxied, { cache: 'no-store' });
-  const data = await res.json();
-  return data;
+  // try direct (may be CORS-blocked, but we'll catch and fallback)
+  const res = await fetch(url, { cache: 'no-store', mode: 'cors' });
+  if (!res.ok) throw new Error('SSLLabs HTTP ' + res.status);
+  return await res.json(); // may fail if CORS denies JSON
 }
 function formatSsl(data){
   if (!data) return 'Không có dữ liệu.';
@@ -197,11 +192,11 @@ document.getElementById('sslStart')?.addEventListener('click', async () => {
     }
     out.textContent = formatSsl(data);
   } catch (e){
-    out.textContent = '⚠️ Lỗi gọi API hoặc bị chặn CORS.';
+    out.textContent = '⚠️ Không thể gọi API trong môi trường của bạn (CORS/proxy). Nhấn “Mở SSLLabs” để xem kết quả trực tiếp.';
   }
 });
 
-// === Port Scan (HTTP/HTTPS via allorigins) ===
+// === Port Scan (HTTP/HTTPS) — DIRECT no-cors (no proxy) ===
 function parsePorts(input){
   const parts = input.split(',').map(s => s.trim()).filter(Boolean);
   const set = new Set();
@@ -220,16 +215,13 @@ function parsePorts(input){
 }
 async function checkPort(host, port, scheme, timeoutMs){
   const target = `${scheme}://${host}:${port}/`;
-  const proxied = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(target);
   const ctrl = new AbortController();
   const t = setTimeout(()=> ctrl.abort('timeout'), timeoutMs);
   try {
-    const res = await fetch(proxied, { signal: ctrl.signal, cache: 'no-store' });
+    const res = await fetch(target, { signal: ctrl.signal, cache: 'no-store', mode: 'no-cors' });
     clearTimeout(t);
-    if (res.ok || res.status === 0){
-      return { port, scheme, status: 'có thể mở (HTTP OK/opaque)' };
-    }
-    return { port, scheme, status: `phản hồi ${res.status}` };
+    // If fetch resolves (even opaque), consider the port reachable at TCP/TLS level.
+    return { port, scheme, status: 'có thể mở (kết nối được)' };
   } catch (e){
     clearTimeout(t);
     return { port, scheme, status: (e && e.name === 'AbortError') ? 'timeout' : 'không kết nối' };
