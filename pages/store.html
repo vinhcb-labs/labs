@@ -3,7 +3,7 @@
 <div style="padding:18px">
   <div class="row" style="justify-content: space-between; gap: 12px; margin-bottom: 10px;">
     <input id="storeSearch" class="search" placeholder="Tìm app… " aria-label="Tìm kiếm ứng dụng" />
-    <span class="chip" title="Hướng dẫn"></span>
+    <span class="chip" title="Hướng dẫn">Gõ để tìm theo tên hoặc từ khoá</span>
   </div>
   <div class="grid" id="storeGrid">
     <article class="card" data-tags="ultraviewer hỗ trợ từ xa">
@@ -61,9 +61,10 @@
   const storeSearch = document.getElementById('storeSearch');
   const storeGrid = document.getElementById('storeGrid');
   storeSearch.addEventListener('input', () => {
-    const q = storeSearch.value.toLowerCase().trim();
+    const norm = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    const q = norm(storeSearch.value.toLowerCase().trim());
     storeGrid.querySelectorAll('.card').forEach(card => {
-      const text = (card.innerText + ' ' + (card.dataset.tags||'')).toLowerCase();
+      const text = norm((card.innerText + ' ' + (card.dataset.tags||'')).toLowerCase());
       card.style.display = text.includes(q) ? '' : 'none';
     });
   });

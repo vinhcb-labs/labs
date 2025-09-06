@@ -1,2 +1,29 @@
 <link rel="stylesheet" href="../assets/style.css">
-<div style="padding:18px"><h3>System</h3><p class="mini">Trang System (placeholder).</p></div>
+<div style="padding:18px">
+  <h3 style="margin:0 0 12px 0">System</h3>
+  <div class="grid">
+    <article class="card">
+      <h3>Trình duyệt</h3>
+      <p class="mini"><code id="ua"></code></p>
+    </article>
+    <article class="card">
+      <h3>Màn hình</h3>
+      <p class="mini">Size: <span id="scr"></span></p>
+    </article>
+    <article class="card">
+      <h3>Ngôn ngữ &amp; Múi giờ</h3>
+      <p class="mini">Lang: <span id="lang"></span></p>
+      <p class="mini">Timezone: <span id="tz"></span></p>
+    </article>
+  </div>
+</div>
+<script>
+(function(){
+  document.getElementById('ua').textContent = navigator.userAgent;
+  document.getElementById('scr').textContent = screen.width + '×' + screen.height + ' @' + (window.devicePixelRatio||1)+'x';
+  document.getElementById('lang').textContent = (navigator.languages||[navigator.language]).join(', ');
+  try{
+    document.getElementById('tz').textContent = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  }catch{ document.getElementById('tz').textContent = '—'; }
+})();
+</script>

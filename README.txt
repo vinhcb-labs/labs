@@ -1,12 +1,11 @@
-# Labs Dashboard (IIS package — structured)
 
 ## Cấu trúc thư mục
 - /assets
   - style.css
   - app.js
 - /pages
-  - home.html (trang chủ)
-  - network.html (chỉ IP PUBLIC)
+  - home.html
+  - network.html
   - store.html
   - system.html
   - about.html
@@ -14,9 +13,9 @@
 - web.config
 - README.txt
 
-## Triển khai
-1) Giải nén toàn bộ vào: `C:\inetpub\wwwroot\labs\`
-2) IIS Manager → Sites → Add Website (trỏ đến thư mục này), đảm bảo `index.html` là Default Document.
-3) Mở site → vào Home trước. Dùng tabs để chuyển trang.
 
-— Build for Vĩnh
+Chạy local:
+- Mở file index.html bằng trình duyệt (protocol file://). Badge sẽ hiển thị "Local • file://".
+
+Triển khai server (IIS/Static host):
+- Đặt toàn bộ thư mục lên web root. web.config đã cấu hình một số header bảo mật (CSP, X-Content-Type-Options, Referrer-Policy...).

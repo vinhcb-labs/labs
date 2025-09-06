@@ -58,7 +58,15 @@ document.addEventListener('click', (e)=>{
   e.preventDefault();
   const tab = t.dataset.tab;
   if (!routes[tab]) return;
-  if (location.hash !== '#' + tab) history.replaceState(null, '', `#${tab}`);
-  loadPage(tab);
+  if (location.hash !== '#' + tab) { location.hash = '#' + tab; } else { loadPage(tab); }
 });
-window.addEventListener('DOMContentLoaded', ()=> loadPage(currentRoute()));
+window.addEventListener('DOMContentLoaded', ()=> {
+  // Set build badge based on protocol/host
+  const badge = document.querySelector('.badge');
+  if (badge){
+    const isLocal = location.protocol === 'file:';
+    const host = location.hostname || 'localhost';
+    badge.textContent = isLocal ? 'Local • file://' : ('Server • ' + host);
+  }
+  loadPage(currentRoute());
+});
