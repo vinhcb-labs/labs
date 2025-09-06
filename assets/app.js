@@ -20,6 +20,10 @@ const routes = {
   network: 'pages/network.html',
   system: 'pages/system.html',
   about: 'pages/about.html',
+  vstoc: 'pages/vstoc.html',
+  contact: 'pages/contact.html',
+  terms: 'pages/terms.html',
+  privacy: 'pages/privacy.html',
 };
 
 function ensureIframe(){
