@@ -2,51 +2,10 @@
 <div style="padding:18px">
   <h3 style="margin:0 0 12px 0">Network</h3>
   <div class="tool">
-    <body>
-  <main class="container">
-    <section class="card">
-      <h1>Chọn tuyến mạng</h1>
-      <div class="row">
-        <label for="netSelect">Điểm POP / Region</label>
-        <select id="netSelect" aria-label="Chọn tuyến mạng">
-          <option value="" disabled selected>— Chọn —</option>
-          <option value="NET-HCM">NET-HCM</option>
-          <option value="NET-HN">NET-HN</option>
-          <option value="NET-NT">NET-NT</option>
-        </select>
-      </div>
-      <p class="muted">Khi bạn chọn một mục, trang tương ứng sẽ được mở ngay.</p>
-    </section>
-  </main>
-
-  <script>
-    // Map lựa chọn → URL trang cần mở. Hãy đổi các URL này theo dự án của bạn.
-    const ROUTES = {
-      "NET-HCM": "net-hcm.html",
-      "NET-HN" : "net-hn.html",
-      "NET-NT" : "net-nt.html"
-    };
-
-    const sel = document.getElementById("netSelect");
-    sel.addEventListener("change", (e) => {
-      const key = e.target.value;
-      const url = ROUTES[key];
-      if (url) {
-        // Mở trong cùng tab. Nếu muốn tab mới, thay bằng: window.open(url, "_blank", "noopener");
-        window.location.href = url;
-      }
-    });
-
-    // Optional: nếu có ?open=NET-HCM trong URL, tự mở ngay.
-    const params = new URLSearchParams(location.search);
-    const preset = params.get("open");
-    if (preset && ROUTES[preset]) {
-      sel.value = preset;
-      window.location.href = ROUTES[preset];
-    }
-  </script>
-</body>
-
+    <h4 style="margin:0">IP PUBLIC: <code id="publicIp">Đang lấy…</code></h4>
+    <div class="mini" style="margin-top:6px">
+      Địa chỉ IP mà Internet nhìn thấy từ mạng của bạn (WAN egress).
+    </div>
   </div>
 </div>
 <script>
