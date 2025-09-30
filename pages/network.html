@@ -2,7 +2,7 @@
 <div style="padding:18px">
   <h3 style="margin:0 0 12px 0">Network</h3>
   <div class="tool">
-    <body>
+   <body>
   <main class="container">
     <section class="card">
       <h1>Chọn tuyến mạng</h1>
@@ -20,11 +20,10 @@
   </main>
 
   <script>
-    // Map lựa chọn → URL trang cần mở. Hãy đổi các URL này theo dự án của bạn.
     const ROUTES = {
       "NET-HCM": "pages/net/net-hcm.html",
-      "NET-HN" : "net-hn.html",
-      "NET-NT" : "net-nt.html"
+      "NET-HN" : "pages/net/net-hn.html",
+      "NET-NT" : "pages/net/net-nt.html"
     };
 
     const sel = document.getElementById("netSelect");
@@ -32,18 +31,9 @@
       const key = e.target.value;
       const url = ROUTES[key];
       if (url) {
-        // Mở trong cùng tab. Nếu muốn tab mới, thay bằng: window.open(url, "_blank", "noopener");
         window.location.href = url;
       }
     });
-
-    // Optional: nếu có ?open=NET-HCM trong URL, tự mở ngay.
-    const params = new URLSearchParams(location.search);
-    const preset = params.get("open");
-    if (preset && ROUTES[preset]) {
-      sel.value = preset;
-      window.location.href = ROUTES[preset];
-    }
   </script>
 </body>
 
