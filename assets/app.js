@@ -1,6 +1,5 @@
-
 // Theme toggle
-(function(){
+(function(){ 
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
   const saved = localStorage.getItem('theme');
   const theme = saved || (prefersDark ? 'dark' : 'light');
@@ -15,15 +14,14 @@
 
 // Router (iframe-based so scripts in pages run normally)
 const routes = {
-  home: 'pages/home.html',
-  store: 'pages/store.html',
-  network: 'pages/network.html',
-  system: 'pages/system.html',
-  about: 'pages/about.html',
-  vstoc: 'pages/vstoc.html',
-  contact: 'pages/contact.html',
-  terms: 'pages/terms.html',
-  privacy: 'pages/privacy.html',
+  "home": "pages/home.html",
+  "store": "pages/store.html",
+  "network": "pages/network.html",
+  "system": "pages/system.html",
+  "about": "pages/about.html",
+  "contact": "pages/contact.html",
+  "terms": "pages/terms.html",
+  "privacy": "pages/privacy.html"
 };
 
 function ensureIframe(){
